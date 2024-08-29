@@ -10,3 +10,4 @@ Stinky tofu
 Hungry
 Car
 Airplane
+Cruise
