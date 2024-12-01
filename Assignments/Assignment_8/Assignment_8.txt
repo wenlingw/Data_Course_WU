@@ -1,0 +1,12 @@
+1. model 3 is my best model, there were no meaningless predictions (ex. negative growth rates). 
+2. yes, there were non-linear relationships, ex. the relationship between light and growth rate. To deal with non-linear relationships, polynomial regression, generalized additive models, or splines can be done. 
+website: https://www.r-bloggers.com/2023/02/creating-and-predicting-fast-regression-parsnip-models-with-tidyaml/
+3.
+dat <- read.csv("./Data/non_linear_relationship.csv")
+str(dat)
+
+linear_mod <- lm(Response ~ Predictor, data = dat)
+summary(linear_mod)
+
+poly_mod <- lm(Response ~ Predictor, data = dat)
+summary(poly_mod)
