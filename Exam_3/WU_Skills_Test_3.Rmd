@@ -9,7 +9,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 1.Load and clean FacultySalaries_1995.csv file and Re-create the graph below…
-
 ```{r FacultySalary, echo=TRUE}
 library(tidyverse)
 library(tidyr)
@@ -19,6 +18,7 @@ library(modelr)
 library(easystats)
 library(broom)
 library(fitdistrplus)
+library(janitor)
 
 dat <- read.csv("../Exam_3/Exam_3/FacultySalaries_1995.csv")
 View(dat)
@@ -38,7 +38,7 @@ view(dat1)
 
 unique(dat1$Rank)
 
-ggplot(dat1, aes(x = Rank, y = Value, fill = Rank)) +
+gragh1 <- ggplot(dat1, aes(x = Rank, y = Value, fill = Rank)) +
   geom_boxplot(size = 1) +
   facet_wrap(~Tier,) +  
   scale_fill_manual(values = c("lightpink2", "seagreen3", "cadetblue")) + 
@@ -48,7 +48,6 @@ ggplot(dat1, aes(x = Rank, y = Value, fill = Rank)) +
   theme_minimal() +
   theme(legend.position = "bottom",
         axis.text.x = element_text(angle = 45, hjust = 1))
-
 ```
 
 2.Build an ANOVA model and display the summary output in your report.
@@ -61,15 +60,57 @@ dat1$Rank <- as.factor(dat1$Rank)
 mod <- aov(Value ~ State + Tier + Rank, data = dat1)
 summary(mod)
 report(mod)
-
 ```
 
 3. The rest of the test uses another data set. The “Juniper_Oils.csv” data. Get it loaded and take a look. Then tidy it! (show the code used for tidying in your report)
+```{r}
+data <- read.csv("../Exam_3/Exam_3/Juniper_Oils.csv")
+View(data)
+str(data)
+colnames(data)
+
+chem <- c(
+  "alpha.pinene", "para.cymene", "alpha.terpineol", "cedr.9.ene", "alpha.cedrene",
+  "beta.cedrene", "cis.thujopsene", "alpha.himachalene", "beta.chamigrene", "cuparene",
+  "compound.1", "alpha.chamigrene", "widdrol", "cedrol", "beta.acorenol",
+  "alpha.acorenol", "gamma.eudesmol", "beta.eudesmol", "alpha.eudesmol",
+  "cedr.8.en.13.ol", "cedr.8.en.15.ol", "compound.2", "thujopsenal"
+)
+
+data1 <- data %>%
+  pivot_longer(
+    cols = all_of(chem),
+    names_to = "ChemicalID",
+    values_to = "Concentration"
+  )
+
+view(data1)
+```
+
 
 4. Make me a graph of the following:
+```{r}
+gragh2 <- ggplot(data1, aes(x = YearsSinceBurn, y = Concentration)) +
+  geom_smooth(se = TRUE, color = "blue", alpha = 0.5) +  
+  facet_wrap(~ ChemicalID, scales = "free_y") + 
+  labs(x = "Years Since Burn",
+       y = "Concentration") +
+  theme_minimal() 
+```
 
 5. Use a generalized linear model to find which chemicals show concentrations that are significantly (significant, as in P < 0.05) affected by “Years Since Burn”.
-
+```{r}
+data2 <- data1 %>%
+  group_by(ChemicalID) %>% 
+  do({
+    glm_model <- glm(Concentration ~ YearsSinceBurn, data = ., family = gaussian()) 
+    broom::tidy(glm_model) %>% filter(term == "YearsSinceBurn") 
+  }) %>%
+  ungroup() %>%
+  filter(p.value < 0.05) %>% 
+  dplyr::select(ChemicalID, term, estimate, std.error, statistic, p.value)
+view(data2)
+```
 
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

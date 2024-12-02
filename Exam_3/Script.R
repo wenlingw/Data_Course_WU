@@ -4,8 +4,10 @@ library(dplyr)
 library(ggplot2)
 library(modelr)
 library(easystats)
+install.packages("broom")
 library(broom)
 library(fitdistrplus)
+library(janitor)
 #1
 dat <- read.csv("../Exam_3/Exam_3/FacultySalaries_1995.csv")
 View(dat)
@@ -25,7 +27,7 @@ view(dat1)
 
 unique(dat1$Rank)
 
-ggplot(dat1, aes(x = Rank, y = Value, fill = Rank)) +
+gragh1 <- ggplot(dat1, aes(x = Rank, y = Value, fill = Rank)) +
   geom_boxplot(size = 1) +
   facet_wrap(~Tier,) +  
   scale_fill_manual(values = c("lightpink2", "seagreen3", "cadetblue")) + 
@@ -44,3 +46,48 @@ dat1$Rank <- as.factor(dat1$Rank)
 mod <- aov(Value ~ State + Tier + Rank, data = dat1)
 summary(mod)
 report(mod)
+
+#3 
+data <- read.csv("../Exam_3/Exam_3/Juniper_Oils.csv")
+View(data)
+str(data)
+colnames(data)
+
+chem <- c(
+  "alpha.pinene", "para.cymene", "alpha.terpineol", "cedr.9.ene", "alpha.cedrene",
+  "beta.cedrene", "cis.thujopsene", "alpha.himachalene", "beta.chamigrene", "cuparene",
+  "compound.1", "alpha.chamigrene", "widdrol", "cedrol", "beta.acorenol",
+  "alpha.acorenol", "gamma.eudesmol", "beta.eudesmol", "alpha.eudesmol",
+  "cedr.8.en.13.ol", "cedr.8.en.15.ol", "compound.2", "thujopsenal"
+)
+
+data1 <- data %>%
+  pivot_longer(
+    cols = all_of(chem),
+    names_to = "ChemicalID",
+    values_to = "Concentration"
+  )
+
+view(data1)
+
+#4
+gragh2 <- ggplot(data1, aes(x = YearsSinceBurn, y = Concentration)) +
+  geom_smooth(se = TRUE, color = "blue", alpha = 0.5) +  
+  facet_wrap(~ ChemicalID, scales = "free_y") + 
+  labs(x = "Years Since Burn",
+       y = "Concentration") +
+  theme_minimal() 
+
+#5
+data2 <- data1 %>%
+  group_by(ChemicalID) %>% 
+  do({
+    glm_model <- glm(Concentration ~ YearsSinceBurn, data = ., family = gaussian()) 
+    broom::tidy(glm_model) %>%
+      filter(term == "YearsSinceBurn") %>% 
+      mutate(ChemicalID = unique(.$ChemicalID)) 
+  }) %>%
+  ungroup() %>%
+  filter(p.value < 0.05) %>% 
+  dplyr::select(ChemicalID, term, estimate, std.error, statistic, p.value) 
+view(data2)
